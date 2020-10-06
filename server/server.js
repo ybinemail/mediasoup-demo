@@ -451,15 +451,21 @@ async function runProtooWebSocketServer()
 	// Create the protoo WebSocket server.
 	protooWebSocketServer = new protoo.WebSocketServer(httpsServer,
 		{
-			maxReceivedFrameSize     : 960000, // 960 KBytes.
+			// 960 KBytes. 允许的最大接收帧大小（以字节为单位）。单帧消息也将限于此最大值
+			maxReceivedFrameSize     : 960000,
+			// 允许的最大消息大小（对于分段消息），以字节为单位
 			maxReceivedMessageSize   : 960000,
+			// 是否对传出消息进行分段。如果为true，则邮件将自动分成最大为fragmentationThreshold字节的块
 			fragmentOutgoingMessages : true,
+			// 在自动分段之前，帧的最大大小（以字节为单位）
 			fragmentationThreshold   : 960000
 		});
 
-	// Handle connections from clients.
+	// Handle connections from clients.	服务端收如果接受连接将调用accept函数。如果拒绝连接，则调用该函数。
 	protooWebSocketServer.on('connectionrequest', (info, accept, reject) =>
 	{
+		//  info 是属于一个连链接的所有信息，可以根据info获取如一些url或者其他信息来判断处理相对应的业务逻辑
+
 		// The client indicates the roomId and peerId in the URL query.
 		const u = url.parse(info.request.url, true);
 		const roomId = u.query['roomId'];
@@ -483,7 +489,7 @@ async function runProtooWebSocketServer()
 		{
 			const room = await getOrCreateRoom({ roomId });
 
-			// Accept the protoo WebSocket connection.
+			// Accept the protoo WebSocket connection. 建立和远程客户端的连接
 			const protooWebSocketTransport = accept();
 
 			room.handleProtooConnection({ peerId, protooWebSocketTransport });
@@ -512,6 +518,7 @@ function getMediasoupWorker()
 
 /**
  * Get a Room instance (or create one if it does not exist).
+ * 调用mediasoup api Room.create 创建房间
  */
 async function getOrCreateRoom({ roomId })
 {
